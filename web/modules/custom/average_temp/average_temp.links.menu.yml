@@ -1,0 +1,5 @@
+average_temp.settings:
+  title: Average temp settings
+  description: 'Configure Open weather API key.'
+  route_name: average_temp.settings
+  parent: system.admin_config_services

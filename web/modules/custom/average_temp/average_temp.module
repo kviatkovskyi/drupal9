@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * Implements hook_cron().
+ *
+ */
+function average_temp_cron() {
+  $interval = 3600;
+  $request_time = \Drupal::time()->getRequestTime();
+  $next_execution = \Drupal::state()->get('average_temp.next_execution', 0);
+  if ($request_time >= $next_execution) {
+    \Drupal::service('average_temp.service')->setCurrentTempData();
+    \Drupal::state()
+      ->set('average_temp.next_execution', $request_time + $interval);
+  }
+}

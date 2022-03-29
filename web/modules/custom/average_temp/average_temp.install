@@ -1,0 +1,65 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the average_temp module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function average_temp_schema() {
+  $schema['average_temp'] = [
+    'description' => 'Table that contains temp data.',
+    'fields' => [
+      'id' => [
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Key for id of row.',
+      ],
+      'created' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Timestamp when the item was created.',
+      ],
+      'city' => [
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'Name of city.',
+      ],
+      'temp' => [
+        'type' => 'float',
+        'not null' => TRUE,
+        'description' => 'Serialized array of variables that match the message string and that is passed into the t() function.',
+      ],
+      'data' => [
+        'type' => 'blob',
+        'size' => 'big',
+        'not null' => TRUE,
+        'serialize' => TRUE,
+        'description' => 'Saved json response.',
+      ],
+    ],
+    'primary key' => ['id'],
+    'indexes' => [
+      'created' => ['created'],
+      'city' => ['city'],
+      'temp' => ['temp'],
+    ],
+  ];
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function average_temp_uninstall($is_syncing) {
+  try {
+    \Drupal::database()->delete('average_temp');
+  }
+  catch (Exception $e) {
+    watchdog_exception('average_temp', $e);
+  }
+}

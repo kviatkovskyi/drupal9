@@ -1,0 +1,4 @@
+services:
+  average_temp.service:
+    class: Drupal\average_temp\TempService
+    arguments: ['@http_client', '@database', '@config.factory', '@datetime.time', '@entity_type.manager']

@@ -1,0 +1,6 @@
+name: Average temp
+type: module
+description: Provide a block with average temp by city.
+configure: average_temp.settings
+package: custom
+core_version_requirement: ^8.8 || ^9

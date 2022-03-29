@@ -1,0 +1,15 @@
+average_temp.settings:
+  path: '/admin/config/services/average-temp-settings'
+  defaults:
+    _form: '\Drupal\average_temp\Form\AverageTempConfigForm'
+    _title: 'Average temp api settings'
+  requirements:
+    _permission: 'administer average temp settings'
+
+average_temp.page:
+  path: '/admin/average-temp-page'
+  defaults:
+    _controller: '\Drupal\average_temp\Controller\AverageAdminPage::build'
+    _title: 'Temp data admin page'
+  requirements:
+    _permission: 'administer average temp settings'
