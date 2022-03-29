@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+
+##Import database or create/restore quick snapshots of database 
+
+#echo $PROJECT_ROOT
+#echo $DOCROOT
+#echo $MYSQL_BACKUP
+
+DB_ID="${COMPOSE_PROJECT_NAME_SAFE}_db_1"
+
+#-------------------------- Helper functions --------------------------------
+
+# Console colors
+red='\033[0;31m'
+green='\033[0;32m'
+green_bg='\033[42m'
+yellow='\033[1;33m'
+NC='\033[0m'
+
+echo-red () { echo -e "${red}$1${NC}"; }
+echo-green () { echo -e "${green}$1${NC}"; }
+echo-green-bg () { echo -e "${green_bg}$1${NC}"; }
+echo-yellow () { echo -e "${yellow}$1${NC}"; }
+
+# env |sort
+
+# Import db from local backup file
+import_mydb ()
+{
+  if [ ! -f $MYSQL_BACKUP ]; then
+    help_mydb
+  fi
+  if [[ "$MYSQL_BACKUP" == *.gz ]]; then
+    zcat $MYSQL_BACKUP | fin db import --progress
+  else
+    fin db import --progress $MYSQL_BACKUP
+  fi
+}
+
+# Create snapshot from db
+snapshot_mydb ()
+{
+  if [ "x$MYSQL_SNAPSHOT_DIR" == "x" ]; then
+    help_mydb
+    exit 1
+  fi
+  if [ ! -d $MYSQL_SNAPSHOT_DIR ]; then
+    mkdir $MYSQL_SNAPSHOT_DIR
+    if [ $? ]; then
+      echo-red "Can't create $MYSQL_SNAPSHOT_DIR... exiting"
+      exit 1
+    fi
+  fi
+  # stop mysql container
+  docker stop $DB_ID
+  docker run --rm --volumes-from $DB_ID carinamarina/backup backup --source var/lib/mysql/ --stdout --zip > $MYSQL_SNAPSHOT_DIR/$COMPOSE_PROJECT_NAME_SAFE.tar.gz
+  docker start $DB_ID
+  sleep 10
+  echo-green "Saved database snapshot in $MYSQL_SNAPSHOT_DIR/$COMPOSE_PROJECT_NAME_SAFE.tar.gz"
+}
+
+# Restore db from snapshot
+restore_mydb ()
+{
+  if [ "x$MYSQL_SNAPSHOT_DIR" == "x" ]; then
+    help_mydb
+    exit 1
+  fi
+  if [ ! -f $MYSQL_SNAPSHOT_DIR/$COMPOSE_PROJECT_NAME_SAFE.tar.gz ]; then
+    echo "Can't find a snapshot file. Did you create a snapshot for this project?"
+    echo-red "Looking for $MYSQL_SNAPSHOT_DIR/$COMPOSE_PROJECT_NAME_SAFE.tar.gz ... exiting"
+    exit 1
+  fi
+  # stop database container
+  docker stop $DB_ID
+  docker run --rm --interactive --volumes-from $DB_ID carinamarina/backup restore --destination /var/lib/mysql/ --stdin --zip < $MYSQL_SNAPSHOT_DIR/$COMPOSE_PROJECT_NAME_SAFE.tar.gz
+  docker start $DB_ID
+  sleep 10
+  echo-green "Restored database snapshot from $MYSQL_SNAPSHOT_DIR/$COMPOSE_PROJECT_NAME_SAFE.tar.gz"
+}
+
+# Show help for mydb command
+help_mydb ()
+{
+  cat <<EOF
+fin db [import|snapshot|restore]
+  
+    arguments:
+    import      Import db from local backup file. Define MYSQL_BACKUP in .docksal/docksal-local.env! 
+    snapshot    Create a quick snapshot from project database. Define MYSQL_SNAPSHOT_DIR in .docksal/docksal-local.env!
+    restore     Quick database restore from a snapshot of this project.
+
+EOF
+}
+
+# Parse parameters
+case "$1" in
+	import)
+		shift
+		import_mydb
+		;;
+	snapshot)
+		shift
+		snapshot_mydb
+		;;
+	restore)
+		shift
+		restore_mydb
+		;;
+	*)
+		shift
+		help_mydb
+esac
